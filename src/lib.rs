@@ -148,5 +148,3 @@ impl Display for SmartPlugErrorCode {
         }
     }
 }
-
-
