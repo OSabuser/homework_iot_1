@@ -1,6 +1,5 @@
 //! Библиотека "Умный дом" OTUS 2024 - [2]
 use std::collections::HashMap;
-use std::fmt::{self, format};
 
 fn main() {
     // Создание нового экземпляра дома
@@ -10,11 +9,6 @@ fn main() {
     smart_house.add_room("Room_1");
     smart_house.add_room("Room_2");
     smart_house.add_room("Room_3");
-
-    // Вывод зарегистрированных в умном доме помещений
-    if let Some(room_list) = smart_house.get_rooms() {
-        println!("Зарегистрированы комнаты: {:?}", room_list);
-    }
 
     // Создание нескольких умных девайсов
     let my_socket_1 = SmartSocket {
@@ -30,7 +24,7 @@ fn main() {
         name: "TheGreatThermometer".to_string(),
     };
     let my_thermometer_2 = SmartThermometer {
-        name: "RegularThermometer".to_string(),
+        name: "UnrealThermometer".to_string(),
     };
 
     // Привязка девайсов к конкретным помещениям
@@ -38,14 +32,14 @@ fn main() {
     smart_house.link_device_with_room("Room_2", &my_socket_2.name);
     smart_house.link_device_with_room("Room_3", &my_socket_3.name);
     smart_house.link_device_with_room("Room_1", &my_thermometer_1.name);
-    smart_house.link_device_with_room("Room_2", &my_thermometer_2.name);
+    //smart_house.link_device_with_room("Room_2", &my_thermometer_2.name);
 
     // Создание требований для отчёта
     let sockets_info = SmartSocketInfoProvider {
         most_wanted_socket_1: &my_socket_1,
         most_wanted_socket_2: &my_socket_3,
     };
-    let thermometers_info = MyCustomInfoProvider_1 {
+    let thermometers_info = MyCustomInfoProvider1 {
         thermometer_instance_1: &my_thermometer_1,
         thermometer_instance_2: &my_thermometer_2,
         smart_socket_1: &my_socket_2,
@@ -53,20 +47,29 @@ fn main() {
 
     // Составление отчётов
     let report_1 = smart_house.create_report(&sockets_info);
+    println!("Report 1:\n{}", report_1);
     let report_2 = smart_house.create_report(&thermometers_info);
+    println!("Report 2:\n{}", report_2);
+    let smart_home_info = smart_house.get_smart_house_status();
+    println!("Smart home status:\n{}", smart_home_info);
 }
 
-enum SmartDeviceStatus {
+#[allow(dead_code)]
+enum SmartDeviceScanningStatus {
     Registered(String),
     NotFound(String),
 }
 trait SmartDeviceInfoProvider {
+    /// Получение статуса устройства
     fn get_device_status_info(
         &self,
         smart_house_instance: &SmartHouse,
         room_name: &str,
         device_name: &str,
-    ) -> SmartDeviceStatus;
+    ) -> SmartDeviceScanningStatus;
+
+    /// Получение списка имён устройств, для которых необходимо составить отчёт
+    fn get_device_names(&self) -> Vec<&str>;
 }
 
 // Пользовательские устройства:
@@ -77,9 +80,18 @@ struct SmartThermometer {
     name: String,
 }
 
+// Пользовательские поставщики информации об устройствах
 struct SmartSocketInfoProvider<'sockets_lifetime> {
     most_wanted_socket_1: &'sockets_lifetime SmartSocket,
     most_wanted_socket_2: &'sockets_lifetime SmartSocket,
+}
+impl SmartSocketInfoProvider<'_> {
+    fn get_smart_device_names(&self) -> [&str; 2] {
+        [
+            &self.most_wanted_socket_1.name,
+            &self.most_wanted_socket_2.name,
+        ]
+    }
 }
 impl SmartDeviceInfoProvider for SmartSocketInfoProvider<'_> {
     fn get_device_status_info(
@@ -87,51 +99,73 @@ impl SmartDeviceInfoProvider for SmartSocketInfoProvider<'_> {
         smart_house_instance: &SmartHouse,
         room_name: &str,
         device_name: &str,
-    ) -> SmartDeviceStatus {
+    ) -> SmartDeviceScanningStatus {
         if smart_house_instance.is_device_presented_in_room(room_name, device_name) {
-            SmartDeviceStatus::Registered(format!(
-                "Note: {} is located in {}",
+            SmartDeviceScanningStatus::Registered(format!(
+                "{} is located in {}\n",
                 device_name, room_name
             ))
         } else {
-            SmartDeviceStatus::NotFound(format!(
-                "Error: {} wasn't found in {}",
-                device_name, room_name
-            ))
+            SmartDeviceScanningStatus::NotFound("Not found!".to_string())
         }
+    }
+    fn get_device_names(&self) -> Vec<&str> {
+        let mut device_names = Vec::with_capacity(self.get_smart_device_names().len());
+
+        for device_name in self.get_smart_device_names() {
+            device_names.push(device_name);
+        }
+        device_names
     }
 }
 
-struct MyCustomInfoProvider_1<'devices_lifetime> {
+struct MyCustomInfoProvider1<'devices_lifetime> {
     thermometer_instance_1: &'devices_lifetime SmartThermometer,
     thermometer_instance_2: &'devices_lifetime SmartThermometer,
     smart_socket_1: &'devices_lifetime SmartSocket,
 }
-impl SmartDeviceInfoProvider for MyCustomInfoProvider_1<'_> {
+impl MyCustomInfoProvider1<'_> {
+    fn get_smart_device_names(&self) -> [&str; 3] {
+        [
+            &self.thermometer_instance_1.name,
+            &self.thermometer_instance_2.name,
+            &self.smart_socket_1.name,
+        ]
+    }
+}
+impl SmartDeviceInfoProvider for MyCustomInfoProvider1<'_> {
     fn get_device_status_info(
         &self,
         smart_house_instance: &SmartHouse,
         room_name: &str,
         device_name: &str,
-    ) -> SmartDeviceStatus {
+    ) -> SmartDeviceScanningStatus {
         if smart_house_instance.is_device_presented_in_room(room_name, device_name) {
-            SmartDeviceStatus::Registered(format!(
-                "Note: {} is located in {}",
+            SmartDeviceScanningStatus::Registered(format!(
+                "{} is located in {}\n",
                 device_name, room_name
             ))
         } else {
-            SmartDeviceStatus::NotFound(format!(
-                "Error: {} wasn't found in {}",
-                device_name, room_name
-            ))
+            SmartDeviceScanningStatus::NotFound("Not found!".to_string())
         }
+    }
+
+    fn get_device_names(&self) -> Vec<&str> {
+        let mut device_names = Vec::with_capacity(self.get_smart_device_names().len());
+
+        for device_name in self.get_smart_device_names() {
+            device_names.push(device_name);
+        }
+        device_names
     }
 }
 
+#[allow(dead_code)]
 enum SmartHouseManagementStatus {
     OperationSucceded,
     OperationFailed(ErrorReason),
 }
+#[allow(dead_code)]
 enum ErrorReason {
     RoomLimitExceeded,
     DeviceLimitExceeded,
@@ -143,12 +177,14 @@ enum ErrorReason {
 
 ///
 /// 1. Умный дом
-/// В текущей версии может содержать до 5 комнат с различными умными устройствами
+///     В текущей версии может содержать до 5 комнат с 10 умными устройствами в каждой
 ///
 /// ## Параметры
 ///
 /// * `name` - пользовательский псевдоним для дома
-/// * `rooms` - список комнат (хэш таблица, где key - уникальное имя комнаты, value - конкретный экземпляр комнаты с именем key)
+/// * `smart_rooms` - список комнат (хэш таблица, где key - уникальное имя комнаты, value - конкретный экземпляр комнаты с именем key)
+/// * `room_limit` - максимальное допустимое число комнат в доме
+/// * `device_limit` - максимальное допустимое число умных устройств в комнате 
 ///
 struct SmartHouse {
     name: String,
@@ -167,6 +203,34 @@ impl SmartHouse {
         }
     }
 
+    /// Вывод текстовой информации о состоянии дома
+    fn get_smart_house_status(&self) -> String {
+        let mut report: Vec<String> = Vec::new();
+
+        if let Some(room_list) = self.get_rooms() {
+            for room in room_list {
+                if let Some(devices_list) = self.get_devices(&room) {
+                    report.push(format!(
+                        "К комнате {} привязаны устройства: {}\n",
+                        room,
+                        devices_list.join(", ")
+                    ));
+                } else {
+                    report.push(format!(
+                        "С комнатой {} не связано ни одно устройство!\n",
+                        room
+                    ));
+                }
+            }
+        } else {
+            report.push(format!(
+                "В доме {} не зарегистрировано ни одной комнаты!\n",
+                self.name
+            ));
+        }
+        report.concat()
+    }
+
     /// Регистрация нового помещения в доме
     fn add_room(&mut self, name: &str) -> SmartHouseManagementStatus {
         if self.smart_rooms.len() == self.room_limit {
@@ -174,16 +238,16 @@ impl SmartHouse {
         }
 
         if self.is_room_already_exist(name) {
-            return SmartHouseManagementStatus::OperationFailed(ErrorReason::RoomAlreadyPresented);
+            SmartHouseManagementStatus::OperationFailed(ErrorReason::RoomAlreadyPresented)
         } else {
             self.smart_rooms
                 .insert(name.to_string(), Vec::with_capacity(10));
-            return SmartHouseManagementStatus::OperationSucceded;
+            SmartHouseManagementStatus::OperationSucceded
         }
     }
 
     /// Удаление помещения из дома
-    fn delete_room(&mut self, name: &str) -> SmartHouseManagementStatus {
+    fn _delete_room(&mut self, name: &str) -> SmartHouseManagementStatus {
         match self.smart_rooms.remove_entry(name) {
             Some(_) => SmartHouseManagementStatus::OperationSucceded,
             None => SmartHouseManagementStatus::OperationFailed(ErrorReason::RoomDoesntExist),
@@ -208,7 +272,7 @@ impl SmartHouse {
                     SmartHouseManagementStatus::OperationFailed(ErrorReason::DeviceLimitExceeded)
                 } else {
                     x.push(device_name.to_string());
-                    return SmartHouseManagementStatus::OperationSucceded;
+                    SmartHouseManagementStatus::OperationSucceded
                 }
             } else {
                 SmartHouseManagementStatus::OperationFailed(ErrorReason::RoomDoesntExist)
@@ -219,7 +283,7 @@ impl SmartHouse {
     }
 
     /// Удаление умного устройства из комнаты
-    fn unlink_device_from_room(
+    fn _unlink_device_from_room(
         &mut self,
         room_name: &str,
         device_name: &str,
@@ -228,12 +292,12 @@ impl SmartHouse {
             if self.is_device_presented_in_room(room_name, device_name) {
                 if let Some(x) = self.smart_rooms.get_mut(room_name) {
                     x.retain(|value| *value != device_name);
-                    return SmartHouseManagementStatus::OperationSucceded;
+                    SmartHouseManagementStatus::OperationSucceded
                 } else {
                     SmartHouseManagementStatus::OperationFailed(ErrorReason::RoomDoesntExist)
                 }
             } else {
-                return SmartHouseManagementStatus::OperationFailed(ErrorReason::DeviceDoesntExist);
+                SmartHouseManagementStatus::OperationFailed(ErrorReason::DeviceDoesntExist)
             }
         } else {
             SmartHouseManagementStatus::OperationFailed(ErrorReason::RoomDoesntExist)
@@ -277,7 +341,7 @@ impl SmartHouse {
     fn get_devices(&self, room_name: &str) -> Option<Vec<String>> {
         if self.is_room_already_exist(room_name) {
             if let Some(device_list) = self.smart_rooms.get(room_name) {
-                if device_list.len() > 0 {
+                if !device_list.is_empty() {
                     let mut device_names = Vec::with_capacity(self.smart_rooms.len());
 
                     for device in device_list {
@@ -296,12 +360,48 @@ impl SmartHouse {
         }
     }
 
+    /// Создание отчёта для конкретного поставщика информации
     fn create_report(&self, requested_order: &dyn SmartDeviceInfoProvider) -> String {
-        if let Some(rooms_list) = self.get_rooms() {
-            let mut report = String::new();
-            format!("There are no created rooms in the {} !", self.name)
+        let mut report: Vec<String> = Vec::new();
+
+        // Получение списка добавленных комнат
+        if let Some(registered_rooms) = self.get_rooms() {
+            let desired_devices = requested_order.get_device_names();
+
+            let mut has_device_been_found = false;
+
+            // Перебор всех комнат в умном доме
+            'device_enumeration: for device in &desired_devices {
+                'rooms_enumeration: for room in &registered_rooms {
+                    match requested_order.get_device_status_info(self, room, device) {
+                        SmartDeviceScanningStatus::Registered(x) => {
+                            has_device_been_found = true;
+                            report.push(x);
+                            break 'rooms_enumeration;
+                        }
+                        SmartDeviceScanningStatus::NotFound(_) => {
+                            has_device_been_found = false;
+                        }
+                    }
+                }
+
+                if !has_device_been_found {
+                    report.push(format!(
+                        "It seems {} isn't registered in {}\n",
+                        device, self.name
+                    ));
+                    continue 'device_enumeration;
+                }
+                has_device_been_found = false;
+            }
+
+            report.concat()
         } else {
-            format!("There are no created rooms in the {} !", self.name)
+            report.push(format!(
+                "You should initialize the {} properly!\n",
+                self.name
+            ));
+            report.concat()
         }
     }
 }
