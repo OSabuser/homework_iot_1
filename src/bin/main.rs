@@ -1,7 +1,7 @@
 //! Библиотека "Умный дом" OTUS 2024 - [2]
 use std::{
     collections::HashMap,
-    fmt::{self, format, Display},
+    fmt::{self, Display},
 };
 
 fn main() {
@@ -17,8 +17,11 @@ fn main() {
         status: SmartDeviceStatus::PowerState(SmartDevicePowerState::Disabled),
     };
 
-    my_socket.set_power_state(SmartDevicePowerState::Enabled);
-    my_thermometer.set_power_state(SmartDevicePowerState::Enabled);
+    let socket_status = my_socket.set_power_state(SmartDevicePowerState::Enabled);
+    let thermo_status = my_thermometer.set_power_state(SmartDevicePowerState::Enabled);
+
+    println!("Power Status 1: {:?}", socket_status);
+    println!("Power Status 2: {:?}", thermo_status);
 
     let report_1 = my_socket.get_text_report();
     let report_2 = my_thermometer.get_text_report();
@@ -26,10 +29,6 @@ fn main() {
     println!("Report1: {}", report_1);
     println!("Report2: {}", report_2);
 }
-
-
-
-
 
 ///
 /// 1. Умный дом
@@ -40,25 +39,23 @@ fn main() {
 /// * `name` - пользовательский псевдоним для дома
 /// * `smart_rooms` - список комнат (хэш таблица, где key - уникальное имя комнаты, value - конкретный экземпляр комнаты с именем key)
 /// * `room_limit` - максимальное допустимое число комнат в доме
-/// * `device_limit` - максимальное допустимое число умных устройств в комнате 
+/// * `device_limit` - максимальное допустимое число умных устройств в комнате
 ///
 struct SmartHouse<'a> {
     name: String,
-    smart_rooms: HashMap<String, Vec<Box<&'a dyn SmartDevice>>>,
+    smart_rooms: HashMap<String, Vec<Box<&'a dyn SmartDevice<ErrorType = dyn Display>>>>,
     room_limit: usize,
     device_limit: usize,
 }
 
-
-
-
-
+#[derive(Clone, Copy, Debug)]
 enum SmartDeviceStatus<T> {
     /// Состояние питания умного устройства
     PowerState(SmartDevicePowerState),
     /// Возможные ошибки в работе умного устройства
     Malfunction(T),
 }
+#[derive(Clone, Copy, Debug)]
 /// Перечисление возможных рабочих состояний умного устройства
 enum SmartDevicePowerState {
     /// Устройство включено
@@ -66,7 +63,7 @@ enum SmartDevicePowerState {
     /// Устройство выключено
     Disabled,
 }
-
+#[derive(Clone, Copy, Debug)]
 // Перечисление возможных ошибок в работе умной розетки
 enum SmartSocketErrorCode {
     /// Ошибка: перегрузка по току
@@ -79,7 +76,7 @@ enum SmartSocketErrorCode {
 trait SmartDevice {
     type ErrorType;
     fn get_device_status(&self) -> &SmartDeviceStatus<Self::ErrorType>;
-    fn set_power_state(&mut self, state: SmartDevicePowerState);
+    fn set_power_state(&mut self, state: SmartDevicePowerState) -> Result<(), Self::ErrorType>;
     fn get_text_report(&self) -> String;
 }
 
@@ -92,11 +89,16 @@ struct SmartSocket {
 impl SmartDevice for SmartSocket {
     type ErrorType = SmartSocketErrorCode;
 
-    fn set_power_state(&mut self, state: SmartDevicePowerState) {
-        if let SmartDeviceStatus::Malfunction(x) = &self.status {
-            println!("Cannot perform the operation due to: {:?}", "error");
-        } else {
-            self.status = SmartDeviceStatus::PowerState(state);
+    fn set_power_state(&mut self, state: SmartDevicePowerState) -> Result<(), Self::ErrorType> {
+        match &self.status {
+            SmartDeviceStatus::PowerState(_) => {
+                self.status = SmartDeviceStatus::PowerState(state);
+                Ok(())
+            }
+            SmartDeviceStatus::Malfunction(y) => {
+                println!("Cannot perform the operation due to: {}", y);
+                Err((*y).clone())
+            }
         }
     }
 
@@ -113,6 +115,7 @@ impl SmartDevice for SmartSocket {
 }
 
 // Перечисление возможных ошибок в работе умной розетки
+#[derive(Clone, Copy, Debug)]
 enum SmartThermometerЕrrorCode {
     /// Ошибка: слишком низкая температура
     Underheat,
@@ -129,11 +132,16 @@ struct SmartThermometer {
 impl SmartDevice for SmartThermometer {
     type ErrorType = SmartThermometerЕrrorCode;
 
-    fn set_power_state(&mut self, state: SmartDevicePowerState) {
-        if let SmartDeviceStatus::Malfunction(x) = &self.status {
-            println!("Cannot perform the operation due to: {:?}", "error");
-        } else {
-            self.status = SmartDeviceStatus::PowerState(state);
+    fn set_power_state(&mut self, state: SmartDevicePowerState) -> Result<(), Self::ErrorType> {
+        match &self.status {
+            SmartDeviceStatus::PowerState(_) => {
+                self.status = SmartDeviceStatus::PowerState(state);
+                Ok(())
+            }
+            SmartDeviceStatus::Malfunction(y) => {
+                println!("Cannot perform the operation due to: {}", y);
+                Err((*y).clone())
+            }
         }
     }
 
