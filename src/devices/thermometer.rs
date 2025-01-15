@@ -1,7 +1,10 @@
-use super::{SmartDevice, SmartDeviceStatus, SmartDevicePowerState};
+//! Модуль, содержащий реализацию устройства "Умный термометр"
+//!
+//! Краткое описание сущности реализации
+//!
+use super::smart_device::{SmartDevice, SmartDevicePowerState, SmartDeviceStatus};
 
-
-/// 
+///
 /// Тип описывающий характеристики и поведение девайса "Умный термометр"
 ///
 struct SmartThermometer {
@@ -17,7 +20,7 @@ struct SmartThermometer {
 
 impl SmartThermometer {
     /// Создание экземпляра термометра с псевдонимом `name`
-    /// 
+    ///
     /// По умолчанию термометр выключен, температура окружающей среды - 0.0 °С
     ///
     /// ## Пример
@@ -25,11 +28,13 @@ impl SmartThermometer {
     /// let my_plug = SmartThermometer::new("ThatFamousThing_0");
     /// ```
     ///
-    fn new(name: &str) -> Self {
+    pub fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
             temperature: 0.0,
-            status: SmartDeviceStatus::PowerState(super::SmartDevicePowerState::Disabled),
+            status: SmartDeviceStatus::PowerState(
+                super::smart_device::SmartDevicePowerState::Disabled,
+            ),
         }
     }
 }
@@ -43,7 +48,6 @@ enum SmartThermometerЕrrorCode {
     /// Ошибка: перегрев
     Overheat,
 }
-
 
 impl SmartDevice for SmartThermometer {
     type ErrorType = SmartThermometerЕrrorCode;
@@ -73,10 +77,6 @@ impl SmartDevice for SmartThermometer {
     }
 }
 
-
-
-
-
 use std::fmt::{self, Display};
 impl Display for SmartThermometerЕrrorCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -93,5 +93,36 @@ impl Display for SmartDeviceStatus<SmartThermometerЕrrorCode> {
             Self::Malfunction(x) => write!(f, "{}", x),
             Self::PowerState(y) => write!(f, "{}", y),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stupid_test() -> () {
+        let mut my_socket = SmartThermometer::new("Thermometer_1");
+
+        let is_device_in_normal_state =
+            match my_socket.set_power_state(SmartDevicePowerState::Enabled) {
+                Ok(_) => true,
+                _ => false,
+            };
+
+        assert_eq!(
+            is_device_in_normal_state, true,
+            "Device must be in an enabled state!"
+        );
+
+        let is_device_enabled = match my_socket.get_device_status() {
+            SmartDeviceStatus::PowerState(SmartDevicePowerState::Enabled) => true,
+            _ => false,
+        };
+
+        assert_eq!(
+            is_device_enabled, true,
+            "Device must be in an enabled state!"
+        );
     }
 }
