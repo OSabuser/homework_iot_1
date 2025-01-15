@@ -1,5 +1,5 @@
 [package]
-name = "iot_home"
+name = "smart_home"
 version = "0.1.0"
 edition = "2021"
 authors = ["Akimov Dmitry"]
