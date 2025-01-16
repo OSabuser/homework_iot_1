@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "smart_house"
+name = "iot_crate"
 version = "0.1.0"

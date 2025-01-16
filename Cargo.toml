@@ -1,5 +1,5 @@
 [package]
-name = "smart_house"
+name = "iot_crate"
 version = "0.1.0"
 edition = "2021"
 

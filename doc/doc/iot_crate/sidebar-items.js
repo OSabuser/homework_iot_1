@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["devices","info_providers","smart_house"]};

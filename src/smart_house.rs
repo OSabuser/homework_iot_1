@@ -1,10 +1,11 @@
 //! Модуль, содержащий реализацию типа-контейнера "Умный дом"
 //!
-//! Краткое описание сущности реализации
-//!
-//!
-use std::collections::HashMap;
+//! > Умный дом представляет собой контейнер для хранения информации о помещениях и устройствах, зарегистрированных в них.
+//! > В доме можно добавлять и удалять помещения, а также привязывать и отвязывать устройства к конкретным помещениям. При этом
+//! > имеются ограничения на максимальное число помещений в доме и устройств в каждом помещении. Имена помещений и устройств должны быть уникальными.
+
 use super::info_providers::{SmartDeviceInfoProvider, SmartDeviceRegistrationState};
+use std::collections::HashMap;
 
 ///
 /// Тип описывающий характеристики "Умного дома"
@@ -22,7 +23,6 @@ pub struct SmartHouse {
     /// Максимальное допустимое число устройств в комнате
     device_limit: usize,
 }
-
 
 /// Результат set/get операций с содержимым умного дома
 pub enum SmartHouseManagementStatus {
@@ -54,7 +54,6 @@ pub enum ErrorReason {
     DeviceDoesntExist,
 }
 
-
 impl SmartHouse {
     /// Создание экземпляра умного дома с псевдонимом `name`
     ///
@@ -75,7 +74,7 @@ impl SmartHouse {
     }
 
     /// Вывод текстовой информации о состоянии дома
-    /// 
+    ///
     /// Выводятся имена комнат и зарегистрированных в них устройствах
     pub fn get_smart_house_status(&self) -> String {
         let mut report: Vec<String> = Vec::new();
@@ -233,7 +232,7 @@ impl SmartHouse {
         }
     }
 
-    /// Создание отчёта для конкретного поставщика информации
+    /// Создание отчёта для в соответствии с типом поставщика данных
     pub fn create_report(&self, requested_order: &dyn SmartDeviceInfoProvider) -> String {
         let mut report: Vec<String> = Vec::new();
 
@@ -279,8 +278,6 @@ impl SmartHouse {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -303,10 +300,11 @@ mod tests {
 
         assert_eq!(is_device_linked, true, "Device must be linked!");
 
-        let is_device_unlinked = match my_house.unlink_device_from_room("LivingRoom", "SmartSocket_1") {
-            SmartHouseManagementStatus::OperationSucceded => true,
-            _ => false,
-        };
+        let is_device_unlinked =
+            match my_house.unlink_device_from_room("LivingRoom", "SmartSocket_1") {
+                SmartHouseManagementStatus::OperationSucceded => true,
+                _ => false,
+            };
 
         assert_eq!(is_device_unlinked, true, "Device must be unlinked!");
 
@@ -329,7 +327,11 @@ mod tests {
                 _ => false,
             };
 
-            assert_eq!(is_room_added, true, "Room must be added! Corrupted index is:{}", i);
+            assert_eq!(
+                is_room_added, true,
+                "Room must be added! Corrupted index is:{}",
+                i
+            );
         }
 
         // Попытка добавить комнату, когда лимит превышен
@@ -342,28 +344,34 @@ mod tests {
 
         // Регистрация максимально возможного числа устройств в произвольной комнате
         for i in 0..=9 {
-            let is_device_linked = match my_house.link_device_with_room("LivingRoom_0", &format!("SmartSocket_{}", i)) {
+            let is_device_linked = match my_house
+                .link_device_with_room("LivingRoom_0", &format!("SmartSocket_{}", i))
+            {
                 SmartHouseManagementStatus::OperationSucceded => true,
                 _ => false,
             };
 
-            assert_ne!(is_device_linked, false, "Device must be linked! Corrupted index is:{}", i);
+            assert_ne!(
+                is_device_linked, false,
+                "Device must be linked! Corrupted index is:{}",
+                i
+            );
         }
 
         // Попытка добавить устройство, когда лимит превышен
-        let is_adding_failed = match my_house.link_device_with_room("LivingRoom_0", "SmartSocket_10") {
+        let is_adding_failed = match my_house
+            .link_device_with_room("LivingRoom_0", "SmartSocket_10")
+        {
             SmartHouseManagementStatus::OperationFailed(ErrorReason::DeviceLimitExceeded) => true,
             _ => false,
         };
 
         assert_eq!(is_adding_failed, true, "Device must not be linked!");
-
     }
 
     #[test]
     fn house_similar_name_test() {
         let mut my_house = SmartHouse::new("CountryHouse");
-
 
         let is_room_added = match my_house.add_room("LivingRoom") {
             SmartHouseManagementStatus::OperationSucceded => true,
@@ -384,11 +392,12 @@ mod tests {
         assert_eq!(is_device_linked, true, "Device must be linked!");
 
         let is_device_linked = match my_house.link_device_with_room("LivingRoom", "SmartSocket_1") {
-            SmartHouseManagementStatus::OperationFailed(ErrorReason::DeviceAlreadyPresented) => true,
+            SmartHouseManagementStatus::OperationFailed(ErrorReason::DeviceAlreadyPresented) => {
+                true
+            }
             _ => false,
         };
 
         assert_eq!(is_device_linked, true, "Device must not be linked!");
-       
     }
 }
