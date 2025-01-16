@@ -8,9 +8,9 @@ use super::smart_device::{SmartDevice, SmartDevicePowerState, SmartDeviceStatus}
 ///
 /// Тип описывающий характеристики и поведение девайса "Умная розетка"
 ///
-struct SmartSocket {
+pub struct SmartSocket {
     /// Пользовательский псевдоним для розетки
-    name: String,
+    pub name: String,
 
     /// Текущая мощность (Вт), потребляемая подключёнными к розетке устройствами
     power_consumption: f32,
@@ -42,7 +42,7 @@ impl SmartSocket {
 
 // Перечисление возможных ошибок в работе умной розетки
 #[derive(Clone, Debug)]
-enum SmartSocketErrorCode {
+pub enum SmartSocketErrorCode {
     /// Ошибка: перегрузка по току
     Overcurrent,
 

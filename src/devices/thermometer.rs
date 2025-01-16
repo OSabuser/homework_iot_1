@@ -7,9 +7,9 @@ use super::smart_device::{SmartDevice, SmartDevicePowerState, SmartDeviceStatus}
 ///
 /// Тип описывающий характеристики и поведение девайса "Умный термометр"
 ///
-struct SmartThermometer {
+pub struct SmartThermometer {
     /// Пользовательский псевдоним для термометра
-    name: String,
+    pub name: String,
 
     /// Текущая температура окружающей среды(°С)
     temperature: f32,
@@ -41,7 +41,7 @@ impl SmartThermometer {
 
 // Перечисление возможных ошибок в работе термометра
 #[derive(Clone)]
-enum SmartThermometerЕrrorCode {
+pub enum SmartThermometerЕrrorCode {
     /// Ошибка: слишком низкая температура
     Underheat,
 
