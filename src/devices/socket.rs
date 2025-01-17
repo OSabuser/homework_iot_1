@@ -7,7 +7,9 @@
 //! > в состояние "Ошибка" и перестаёт выполнять команды на включение/выключение.
 //!
 //!
-use super::smart_device::{SmartDevice, SmartDevicePowerState, SmartDeviceStatus};
+use super::smart_device::{
+    SmartDevice, SmartDeviceErrorCode, SmartDevicePowerState, SmartDeviceStatus,
+};
 
 ///
 /// Тип описывающий характеристики и поведение девайса "Умная розетка"
@@ -20,7 +22,7 @@ pub struct SmartSocket {
     power_consumption: f32,
 
     // Cтатус работы (ВКЛ,ВЫКЛ/ОШИБКА)
-    status: SmartDeviceStatus<<SmartSocket as SmartDevice>::ErrorType>,
+    status: SmartDeviceStatus,
 }
 
 impl SmartSocket {
@@ -44,23 +46,15 @@ impl SmartSocket {
     }
 }
 
-// Перечисление возможных ошибок в работе умной розетки
-#[derive(Clone, Debug)]
-pub enum SmartSocketErrorCode {
-    /// Ошибка: перегрузка по току
-    Overcurrent,
-
-    /// Ошибка: перегрузка по напряжению
-    Overvoltage,
-
-    /// Ошибка: перегрев
-    Overheat,
-}
-
 impl SmartDevice for SmartSocket {
-    type ErrorType = SmartSocketErrorCode;
+    fn get_name(&self) -> &str {
+        &self.name
+    }
 
-    fn set_power_state(&mut self, state: SmartDevicePowerState) -> Result<(), Self::ErrorType> {
+    fn set_power_state(
+        &mut self,
+        state: SmartDevicePowerState,
+    ) -> Result<(), SmartDeviceErrorCode> {
         match &self.status {
             SmartDeviceStatus::PowerState(_) => {
                 self.status = SmartDeviceStatus::PowerState(state);
@@ -73,35 +67,15 @@ impl SmartDevice for SmartSocket {
         }
     }
 
-    fn get_device_status(&self) -> &SmartDeviceStatus<Self::ErrorType> {
-        &self.status
+    fn get_device_status(&self) -> SmartDeviceStatus {
+        self.status.clone()
     }
 
     fn get_text_report(&self) -> String {
         format!(
-            "Current power consumption of {} is {}, status: {}",
-            self.name, self.power_consumption, self.status
+            "Current power consumption is {}, status: {} \n",
+            self.power_consumption, self.status
         )
-    }
-}
-
-use std::fmt::{self, Display};
-
-impl Display for SmartSocketErrorCode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Overcurrent => write!(f, "Overcurrent error."),
-            Self::Overheat => write!(f, "Overheat error."),
-            Self::Overvoltage => write!(f, "Overvoltage error."),
-        }
-    }
-}
-impl Display for SmartDeviceStatus<SmartSocketErrorCode> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Malfunction(x) => write!(f, "{}", x),
-            Self::PowerState(y) => write!(f, "{}", y),
-        }
     }
 }
 

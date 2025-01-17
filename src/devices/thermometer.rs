@@ -1,10 +1,12 @@
 //! Модуль, содержащий реализацию устройства "Умный термометр"
 //!
 //! > Умный термометр - это устройство, которое измеряет температуру окружающей среды
-//! > и может сообщить о ней пользователю. 
+//! > и может сообщить о ней пользователю.
 //! > В случае, если температура окружающей среды выходит за пределы нормы, умный термометр переходит в состояние ошибки.
 
-use super::smart_device::{SmartDevice, SmartDevicePowerState, SmartDeviceStatus};
+use super::smart_device::{
+    SmartDevice, SmartDeviceErrorCode, SmartDevicePowerState, SmartDeviceStatus,
+};
 
 ///
 /// Тип описывающий характеристики и поведение девайса "Умный термометр"
@@ -17,7 +19,7 @@ pub struct SmartThermometer {
     temperature: f32,
 
     // Cтатус работы (ВКЛ,ВЫКЛ/ОШИБКА)
-    status: SmartDeviceStatus<<SmartThermometer as SmartDevice>::ErrorType>,
+    status: SmartDeviceStatus,
 }
 
 impl SmartThermometer {
@@ -41,20 +43,15 @@ impl SmartThermometer {
     }
 }
 
-// Перечисление возможных ошибок в работе термометра
-#[derive(Clone)]
-pub enum SmartThermometerErrorCode {
-    /// Ошибка: слишком низкая температура
-    Underheat,
-
-    /// Ошибка: перегрев
-    Overheat,
-}
-
 impl SmartDevice for SmartThermometer {
-    type ErrorType = SmartThermometerErrorCode;
+    fn get_name(&self) -> &str {
+        &self.name
+    }
 
-    fn set_power_state(&mut self, state: SmartDevicePowerState) -> Result<(), Self::ErrorType> {
+    fn set_power_state(
+        &mut self,
+        state: SmartDevicePowerState,
+    ) -> Result<(), SmartDeviceErrorCode> {
         match &self.status {
             SmartDeviceStatus::PowerState(_) => {
                 self.status = SmartDeviceStatus::PowerState(state);
@@ -67,34 +64,15 @@ impl SmartDevice for SmartThermometer {
         }
     }
 
-    fn get_device_status(&self) -> &SmartDeviceStatus<Self::ErrorType> {
-        &self.status
+    fn get_device_status(&self) -> SmartDeviceStatus {
+        self.status.clone()
     }
 
     fn get_text_report(&self) -> String {
         format!(
-            "{}: current temperature is {}, status: {}",
-            self.name, self.temperature, self.status
+            "Current temperature is {}, status: {}\n",
+            self.temperature, self.status
         )
-    }
-}
-
-use std::fmt::{self, Display};
-impl Display for SmartThermometerErrorCode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Underheat => write!(f, "Underheat error."),
-            Self::Overheat => write!(f, "Overheat error."),
-        }
-    }
-}
-
-impl Display for SmartDeviceStatus<SmartThermometerErrorCode> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Malfunction(x) => write!(f, "{}", x),
-            Self::PowerState(y) => write!(f, "{}", y),
-        }
     }
 }
 

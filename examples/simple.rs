@@ -1,48 +1,66 @@
-/// Пример использования библиотеки для создания умного дома
-/// В данном примере создаётся умный дом, в котором есть несколько помещений и умные девайсы
-/// (розетки и термометры). Девайсы привязываются к помещениям, после чего с помощью шаблонов-поставщиков информации
-/// создаются отчёты о состоянии дома и умных девайсов.
-use iot_crate::info_providers::{template_1, template_2};
-use iot_crate::smart_house::SmartHouse;
+
+/// # Пример использования библиотеки для создания умного дома
+/// 1. Показаны два способа регистрации комнат в доме
+/// 2. Приведён пример добавления умных девайсов в комнаты
+/// 3. Показан пример управления подачей питания к умному устройству
+/// 4. Пример создания отчета о состоянии дома
+use iot_crate::house::House;
+use iot_crate::room::Room;
+use iot_crate::smart_device::{SmartDevice, SmartDevicePowerState};
 use iot_crate::socket::SmartSocket;
 use iot_crate::thermometer::SmartThermometer;
+use iot_crate::containers::SmartContainerManagementStatus;
 
 fn main() {
-    // Создание нового экземпляра дома
-    let mut smart_house = SmartHouse::new("MyLoungeHome");
+    // Создание инстанса умного дома
+    let mut my_house = House::new("MyLoungeHouse", 10);
 
-    // Создание нескольких помещений в доме
-    smart_house.add_room("Room_1");
-    smart_house.add_room("Room_2");
-    smart_house.add_room("Room_3");
+    //  Создание инстансов умных девайсов
+    let mut socket1 = SmartSocket::new("Socket1");
+    let socket2 = SmartSocket::new("Socket2");
+    let socket3 = SmartSocket::new("Socket3");
+    let thermometer1 = SmartThermometer::new("Thermometer1");
+    let thermometer2 = SmartThermometer::new("Thermometer2");
+    let thermometer3 = SmartThermometer::new("Thermometer3");
 
-    // Создание нескольких умных девайсов
-    let my_socket_1 = SmartSocket::new("QuitePrettySocket");
-    let my_socket_2 = SmartSocket::new("ThatDamnedSocket");
-    let my_socket_3 = SmartSocket::new("MyFavoriteSocket");
+    // Включение розетки
+    if let Ok(()) = socket1.set_power_state(SmartDevicePowerState::Enabled) {
+        println!("Socket1 is enabled");
+    }
 
-    let my_thermometer_1 = SmartThermometer::new("TheGreatThermometer");
-    let my_thermometer_2 = SmartThermometer::new("UnrealThermometer");
+    // Создание комнат (Первый способ)
+    let mut living_room = Room::new("LivingRoom", 7);
+    let mut kitchen = Room::new("Kitchen", 5);
 
-    // Привязка девайсов к конкретным помещениям
-    smart_house.link_device_with_room("Room_1", &my_socket_1.name);
-    smart_house.link_device_with_room("Room_2", &my_socket_2.name);
-    smart_house.link_device_with_room("Room_3", &my_socket_3.name);
-    smart_house.link_device_with_room("Room_1", &my_thermometer_1.name);
-    //smart_house.link_device_with_room("Room_2", &my_thermometer_2.name);
+    // Добавление умных девайсов в комнаты
+    living_room.add_device(Box::new(socket1));
+    living_room.add_device(Box::new(thermometer1));
+    kitchen.add_device(Box::new(socket2));
+    kitchen.add_device(Box::new(thermometer2));
 
-    // Заполнение шаблонов для предоставления информации
 
-    let sockets_info = template_1::SocketReport::new(&my_socket_1, &my_socket_3);
+    // Добавление комнат в дом
+    my_house.add_room(living_room);
+    my_house.add_room(kitchen);
 
-    let thermometers_info =
-        template_2::MixedDevicesReport::new(&my_thermometer_1, &my_thermometer_2, &my_socket_2);
+    // Создание комнат (Второй способ)
+    if let SmartContainerManagementStatus::OperationFailed(_) =
+        my_house.create_new_empty_room("Bedroom", 7)
+    {
+        println!("Failed to create a new room!");
+    } else {
+        // Получение ссылки на инстанс комнаты
+        if let Some(room) = my_house.get_room("Bedroom") {
+            // Добавление умных девайсов в комнату
+            room.add_device(Box::new(socket3));
+            room.add_device(Box::new(thermometer3));
+        } else {
+            println!("Failed to get a room!");
+        }
+    }
 
-    // Составление отчётов
-    let report_1 = smart_house.create_report(&sockets_info);
-    println!("Report 1:\n{}", report_1);
-    let report_2 = smart_house.create_report(&thermometers_info);
-    println!("Report 2:\n{}", report_2);
-    let smart_home_info = smart_house.get_smart_house_status();
-    println!("Smart home status:\n{}", smart_home_info);
+    // Создание отчета о состоянии дома
+    let report = my_house.create_report();
+    println!("{}", report);
+
 }
