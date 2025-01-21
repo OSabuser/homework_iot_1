@@ -5,6 +5,11 @@
 /// Перечисление возможных состояний работы умного устройства
 /// Тип T - перечисление ошибок, присущих конкретному устройству
 
+
+//TODO: SmartDeviceStatus from PowerState & Malfunction 
+
+
+
 #[derive(Clone)]
 pub enum SmartDeviceStatus {
     /// Состояние питания умного устройства

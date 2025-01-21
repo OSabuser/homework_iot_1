@@ -6,6 +6,8 @@ use crate::containers::room::Room;
 ///
 use std::collections::HashMap;
 
+//TODO: SmartContainerManagementStatus -> Result<>
+
 /// Тип, описывающий дом
 pub struct House {
     /// Название дома

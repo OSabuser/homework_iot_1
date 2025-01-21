@@ -2,6 +2,8 @@ use super::{SmartContainerManagementStatus, ErrorReason};
 use crate::smart_device::SmartDevice;
 use std::collections::HashMap;
 
+//TODO: SmartContainerManagementStatus -> Result<>
+
 /// Тип, описывающий комнату в доме
 ///
 ///
