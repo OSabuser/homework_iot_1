@@ -1,15 +1,6 @@
 pub mod house;
 pub mod room;
 
-/// Результат set/get операций с содержимым умного дома/комнаты
-pub enum SmartContainerManagementStatus {
-    /// Успех
-    OperationSucceded,
-
-    /// Ошибки set/get
-    OperationFailed(ErrorReason),
-}
-
 /// Перечисление возможных ошибок set/get операций с содержимым умного дома/комнаты
 pub enum ErrorReason {
     /// Превышено максимальное количество элементов в контейнере
@@ -21,3 +12,7 @@ pub enum ErrorReason {
     /// В контейнере отсутствует элемент с таким именем
     ItemDoesntExist,
 }
+
+/// Alias для названия контейнера (умного дома, комнаты)
+pub type ContainerName = String;
+pub type ContainerIOHistory = String;

@@ -1,4 +1,4 @@
-use super::{SmartContainerManagementStatus, ErrorReason};
+use super::{ContainerIOHistory, ContainerName, ErrorReason};
 use crate::containers::room::Room;
 /// Smart house
 ///
@@ -11,10 +11,10 @@ use std::collections::HashMap;
 /// Тип, описывающий дом
 pub struct House {
     /// Название дома
-    pub name: String,
+    pub name: ContainerName,
 
     /// Список комнат в доме
-    rooms: HashMap<String, Room>,
+    rooms: HashMap<ContainerName, Room>,
 
     /// Максимальное количество комнат в доме
     room_limit: usize,
@@ -40,13 +40,13 @@ impl House {
         &mut self,
         room_name: &str,
         device_limit: usize,
-    ) -> SmartContainerManagementStatus {
+    ) -> Result<ContainerName, ErrorReason> {
         if self.rooms.len() >= self.room_limit {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemLimitExceeded);
+            return Err(ErrorReason::ItemLimitExceeded);
         }
 
         if self.rooms.contains_key(room_name) {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemAlreadyPresented);
+            return Err(ErrorReason::ItemAlreadyPresented);
         }
 
         let new_room = Room::new(room_name, device_limit);
@@ -54,27 +54,42 @@ impl House {
     }
 
     /// Добавление комнаты в дом
-    pub fn add_room(&mut self, room: Room) -> SmartContainerManagementStatus {
+    pub fn add_room(&mut self, room: Room) -> Result<ContainerIOHistory, ErrorReason> {
         if self.rooms.len() >= self.room_limit {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemLimitExceeded);
+            return Err(ErrorReason::ItemLimitExceeded);
         }
 
         if self.rooms.contains_key(&room.name) {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemAlreadyPresented);
+            return Err(ErrorReason::ItemAlreadyPresented);
         }
 
-        self.rooms.insert(room.name.to_string(), room);
-        SmartContainerManagementStatus::OperationSucceded
+        let status = format!(
+            "Room {} has been registered in house {}",
+            room.name, self.name
+        );
+
+        self.rooms.insert(room.name.clone(), room);
+
+        Ok(status)
     }
 
     /// Удаление комнаты из дома
-    pub fn remove_room_by_name(&mut self, room_name: &str) -> SmartContainerManagementStatus {
+    pub fn remove_room_by_name(
+        &mut self,
+        room_name: &str,
+    ) -> Result<ContainerIOHistory, ErrorReason> {
         if !self.rooms.contains_key(room_name) {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemDoesntExist);
+            return Err(ErrorReason::ItemDoesntExist);
         }
 
         self.rooms.remove(room_name);
-        SmartContainerManagementStatus::OperationSucceded
+
+        let status = format!(
+            "Room {} has been removed from house {}",
+            room_name, self.name
+        );
+
+        Ok(status)
     }
 
     /// Получение комнаты по имени
@@ -83,7 +98,7 @@ impl House {
     }
 
     /// Получение списка комнат в доме
-    pub fn get_room_list(&self) -> Vec<String> {
+    pub fn get_room_list(&self) -> Vec<ContainerName> {
         self.rooms.keys().cloned().collect()
     }
 

@@ -84,28 +84,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn stupid_test() -> () {
+    fn stupid_test() {
         let mut my_socket = SmartSocket::new("Socket_1");
 
-        let is_device_in_normal_state =
-            match my_socket.set_power_state(SmartDevicePowerState::Enabled) {
-                Ok(_) => true,
-                _ => false,
-            };
+        let is_device_in_normal_state = my_socket
+            .set_power_state(SmartDevicePowerState::Enabled)
+            .is_ok();
 
-        assert_eq!(
-            is_device_in_normal_state, true,
+        assert!(
+            is_device_in_normal_state,
             "Device must be in an enabled state!"
         );
 
-        let is_device_enabled = match my_socket.get_device_status() {
-            SmartDeviceStatus::PowerState(SmartDevicePowerState::Enabled) => true,
-            _ => false,
-        };
-
-        assert_eq!(
-            is_device_enabled, true,
-            "Device must be in an enabled state!"
+        let is_device_enabled = matches!(
+            my_socket.get_device_status(),
+            SmartDeviceStatus::PowerState(SmartDevicePowerState::Enabled)
         );
+
+        assert!(is_device_enabled, "Device must be in an enabled state!");
     }
 }

@@ -1,4 +1,4 @@
-use super::{SmartContainerManagementStatus, ErrorReason};
+use super::{ContainerIOHistory, ContainerName, ErrorReason};
 use crate::smart_device::SmartDevice;
 use std::collections::HashMap;
 
@@ -9,7 +9,7 @@ use std::collections::HashMap;
 ///
 pub struct Room {
     /// Название комнаты
-    pub name: String,
+    pub name: ContainerName,
 
     /// Список умных устройств в комнате
     devices: HashMap<String, Box<dyn SmartDevice>>,
@@ -29,29 +29,41 @@ impl Room {
     }
 
     /// Добавление умного устройства в комнату
-    pub fn add_device(&mut self, device: Box<dyn SmartDevice>) -> SmartContainerManagementStatus {
+    pub fn add_device(
+        &mut self,
+        device: Box<dyn SmartDevice>,
+    ) -> Result<ContainerIOHistory, ErrorReason> {
         if self.devices.len() >= self.device_limit {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemLimitExceeded);
+            return Err(ErrorReason::ItemLimitExceeded);
         }
 
         let device_name = device.get_name();
 
         if self.devices.contains_key(device_name) {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemAlreadyPresented);
+            return Err(ErrorReason::ItemAlreadyPresented);
         }
 
+        let status = format!(
+            "Device {} has been registered in room {}",
+            device_name, self.name
+        );
         self.devices.insert(device_name.to_string(), device);
-        SmartContainerManagementStatus::OperationSucceded
+        Ok(status)
     }
 
     /// Удаление умного устройства из комнаты
-    pub fn remove_device(&mut self, device_name: &str) -> SmartContainerManagementStatus {
+    pub fn remove_device(&mut self, device_name: &str) -> Result<ContainerIOHistory, ErrorReason> {
         if !self.devices.contains_key(device_name) {
-            return SmartContainerManagementStatus::OperationFailed(ErrorReason::ItemDoesntExist);
+            return Err(ErrorReason::ItemDoesntExist);
         }
 
+        let status = format!(
+            "Device {} has been removed from room {}",
+            device_name, self.name
+        );
+
         self.devices.remove(device_name);
-        SmartContainerManagementStatus::OperationSucceded
+        Ok(status)
     }
 
     /// Получение умного устройства по имени
@@ -60,7 +72,7 @@ impl Room {
     }
 
     /// Получение списка умных устройств в комнате
-    pub fn get_device_list(&self) -> Vec<String> {
+    pub fn get_device_list(&self) -> Vec<ContainerName> {
         self.devices.keys().cloned().collect()
     }
 }

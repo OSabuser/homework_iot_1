@@ -1,4 +1,3 @@
-
 /// # Пример использования библиотеки для создания умного дома
 /// 1. Показаны два способа регистрации комнат в доме
 /// 2. Приведён пример добавления умных девайсов в комнаты
@@ -9,7 +8,6 @@ use iot_crate::room::Room;
 use iot_crate::smart_device::{SmartDevice, SmartDevicePowerState};
 use iot_crate::socket::SmartSocket;
 use iot_crate::thermometer::SmartThermometer;
-use iot_crate::containers::SmartContainerManagementStatus;
 
 fn main() {
     // Создание инстанса умного дома
@@ -24,7 +22,10 @@ fn main() {
     let thermometer3 = SmartThermometer::new("Thermometer3");
 
     // Включение розетки
-    if let Ok(()) = socket1.set_power_state(SmartDevicePowerState::Enabled) {
+    if socket1
+        .set_power_state(SmartDevicePowerState::Enabled)
+        .is_ok()
+    {
         println!("Socket1 is enabled");
     }
 
@@ -33,27 +34,43 @@ fn main() {
     let mut kitchen = Room::new("Kitchen", 5);
 
     // Добавление умных девайсов в комнаты
-    living_room.add_device(Box::new(socket1));
-    living_room.add_device(Box::new(thermometer1));
-    kitchen.add_device(Box::new(socket2));
-    kitchen.add_device(Box::new(thermometer2));
+    if living_room.add_device(Box::new(socket1)).is_err() {
+        println!("Failed to add Socket1 to a {}!", living_room.name);
+    }
+    if living_room.add_device(Box::new(thermometer1)).is_err() {
+        println!("Failed to add Thermometer1 to a {}!", living_room.name);
+    }
+    if kitchen.add_device(Box::new(socket2)).is_err() {
+        println!("Failed to add Socket2 to a {}!", kitchen.name);
+    }
 
+    if kitchen.add_device(Box::new(thermometer2)).is_err() {
+        println!("Failed to add Thermometer2 to a {}!", kitchen.name);
+    }
 
     // Добавление комнат в дом
-    my_house.add_room(living_room);
-    my_house.add_room(kitchen);
+    if my_house.add_room(living_room).is_err() {
+        println!("Failed to add a LivingRoom to a {}!", my_house.name);
+    }
+
+    if my_house.add_room(kitchen).is_err() {
+        println!("Failed to add a Kitchen to a {}!", my_house.name);
+    }
 
     // Создание комнат (Второй способ)
-    if let SmartContainerManagementStatus::OperationFailed(_) =
-        my_house.create_new_empty_room("Bedroom", 7)
-    {
+    if my_house.create_new_empty_room("Bedroom", 7).is_err() {
         println!("Failed to create a new room!");
     } else {
         // Получение ссылки на инстанс комнаты
         if let Some(room) = my_house.get_room("Bedroom") {
             // Добавление умных девайсов в комнату
-            room.add_device(Box::new(socket3));
-            room.add_device(Box::new(thermometer3));
+            if room.add_device(Box::new(socket3)).is_err() {
+                println!("Failed to add Socket3 to a {}!", room.name);
+            }
+
+            if room.add_device(Box::new(thermometer3)).is_err() {
+                println!("Failed to add Thermometer3 to a {}!", room.name);
+            }
         } else {
             println!("Failed to get a room!");
         }
@@ -62,5 +79,4 @@ fn main() {
     // Создание отчета о состоянии дома
     let report = my_house.create_report();
     println!("{}", report);
-
 }
